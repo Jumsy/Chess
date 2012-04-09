@@ -1,0 +1,7 @@
+A command line chess program.
+
+Dependancies:
+    Python 3.2.2 (Although other versions may work with no problems.)
+
+To run:
+   Type 'python chess.py' on the command line.

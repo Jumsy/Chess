@@ -53,9 +53,7 @@ class Board:
         print(' ' + '-' * 10 + '\n')
 
     def move_piece(self, origin, target):
-        for location in self.pieces:
-            if location == target:
-                del self.pieces[location]
+        origin, target = tuple(origin), tuple(target)
         self.pieces[target] = self.pieces[origin]
         del self.pieces[origin]
 
@@ -70,11 +68,16 @@ class Chess:
         self.board.display(self.turn)
 
     def do_move(self, move):
+        '''
+        This function takes the move and passes it through a series of
+        functions to parse out the specific moves that should be made.
+        '''
         move_data = self.parse_move(move)
         possible_origins = self.get_all_origins(move_data)
-        actions = self.get_single_origin(possible_origins)
+        actions = self.get_single_origin(possible_origins, move_data)
+        if len(actions): self.turn += 1
         for action in actions:
-            self.board.move_piece(move[0], move[1])
+            self.board.move_piece(action[0], action[1])
 
     def parse_move(self, move):
         '''
@@ -181,30 +184,36 @@ class Chess:
                                   [-1, -2],     [1, -2]         ]
 
         elif piece == 'R' or piece == 'Q':
-            for direction in [ [0, 1], [0, -1], [1, 0], [-1, 0] ]:
+            for direction in [[0, 1], [0, -1], [1, 0], [-1, 0]]:
                 move_dirs.append(direction)
         
         if piece == 'B' or piece == 'Q':
-            for direction in [ [-1, 1], [1, 1], [-1, -1], [1, -1] ]:
+            for direction in [[-1, 1], [1, 1], [-1, -1], [1, -1]]:
                 move_dirs.append(direction)
         
         for offset in move_offset:
             x = offset[0] + target[0]
             y = offset[1] + target[1]
             if x in valid_numbers and y in valid_numbers:
-                possible_origins.append([x, y])
+                location = (x, y)
+                if location in self.board.pieces:
+                    if self.board.pieces[location].type == piece:
+                        possible_origins.append([x, y])
 
         for dir in move_dirs:
             x = dir[0] + target[0]
             y = dir[1] + target[1]
             while x in valid_numbers and y in valid_numbers:
-                possible_origins.append([x, y])
+                location = (x, y)
+                if location in self.board.pieces:
+                    if self.board.pieces[location].type == piece:
+                        possible_origins.append([x, y])
                 x += dir[0]
                 y += dir[1]
 
         return possible_origins
 
-    def get_single_origin(self, possible_origins):
+    def get_single_origin(self, possible_origins, parsed_data):
         '''
         This takes a list of the possible origins of the active piece
         and attempts to determine if any of them are valid moves. If
@@ -217,8 +226,26 @@ class Chess:
         If the number of valid moves is not equal to one, then it gets
         printed so the player knows why the move failed.
         '''               
-        print(possible_origins)
+        #What I need to do here is check that the move is consistent
+        #with all of the data in parsed_move. I also need to check
+        #that players move their own pieces and capture only enemy
+        #pieces. There also needs to be collision detection for the
+        #Queen, Rook, Bishop and Pawn. Finally, I imagine I'll need
+        #castle-checking in here.
+        if self.turn%2: #White's turn
+            friendly = 'White'
+            enemy = 'Black'
+        else:
+            friendly = 'Black'
+            enemy = 'White'
         moves = []
+        print(possible_origins)
+        if len(possible_origins) == 1:
+            origin = possible_origins[0]
+            target = parsed_data['target']
+            moves = [[origin, target]]
+        else:
+            print("There are", len(possible_origins), "possible moves")
         return moves
 
 

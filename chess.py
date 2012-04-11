@@ -63,26 +63,31 @@ class Chess:
         self.turn = 1
         self.board = Board()
         self.notation = {'a':1, 'b':2, 'c':3, 'd':4, 'e':5, 'f':6, 'g':7, 'h':8}
+        self.valid_numbers = [ x for x in range(1, 9) ]
 
     def print_board(self):
         self.board.display(self.turn)
 
     def do_move(self, move):
         '''
-        This function takes the move and passes it through a series of
-        functions to parse out the specific moves that should be made.
+        This function takes the move and passes it to parse_move() 
+        which attempts to get useable data from the move. parse_move()
+        then passes this data along to get_all_origins() which gets
+        all the possible moves that could be made to the target square.
+        get_all_origins() then passes along the possible origins and 
+        parsed_move to get_single_origin() which finally returns all
+        the moves that should be made (or an empty list if no moves
+        can be made.)
         '''
-        move_data = self.parse_move(move)
-        possible_origins = self.get_all_origins(move_data)
-        actions = self.get_single_origin(possible_origins, move_data)
-        if len(actions): self.turn += 1
-        for action in actions:
+        move_actions = self.parse_move(move)
+        if len(move_actions): self.turn += 1
+        for action in move_actions:
             self.board.move_piece(action[0], action[1])
 
     def parse_move(self, move):
         '''
         This function takes the player's move passed along as a string.
-        It then returns a dictionary full of all relevant parsed data:
+        It then attempts to parse the following data from the string:
             'piece':   The piece the player is moving ('K' if castling)
                        given as one of 'R', 'N', 'B', 'K', 'Q', or 'P'
             'target':  The location of the square the player is
@@ -93,9 +98,10 @@ class Chess:
                        the active piece can be parsed. Given as int
             'capture': Included only attempting to capture a piece
             'castle':  Included only when attempting to castle
+        This dictionary then gets passed along to get_all_origins().
         '''
         parsed_data = {}
-        valid_numbers = [ str(x) for x in range(1, 9) ]
+        valid_numbers = [str(x) for x in range(1, 9)]
         notation = self.notation
         piece_set = ['R', 'N', 'B', 'Q', 'K', 'P']
 
@@ -129,7 +135,7 @@ class Chess:
                 parsed_data['piece'] = 'P'
                 parsed_data['ori_col'] = parsed_data['target'][0]
 
-        return parsed_data
+        return self.get_all_origins(parsed_data)
 
     def get_all_origins(self, parsed_data):
         '''
@@ -144,13 +150,12 @@ class Chess:
         directions is set.
         After move_offset or move_dirs has been set, all relative
         locations are converted to absolute locations on the board
-        and the values are returned.
+        and the values are then passed along to get_single_origin()
         '''
         possible_origins = []
         if 'target' not in parsed_data or 'piece' not in parsed_data:
             return possible_origins
 
-        valid_numbers = [ x for x in range(1, 9) ]
         piece = parsed_data['piece']
         target = parsed_data['target']
         move_offset = []
@@ -194,7 +199,7 @@ class Chess:
         for offset in move_offset:
             x = offset[0] + target[0]
             y = offset[1] + target[1]
-            if x in valid_numbers and y in valid_numbers:
+            if x in self.valid_numbers and y in self.valid_numbers:
                 location = (x, y)
                 if location in self.board.pieces:
                     if self.board.pieces[location].type == piece:
@@ -203,15 +208,17 @@ class Chess:
         for dir in move_dirs:
             x = dir[0] + target[0]
             y = dir[1] + target[1]
-            while x in valid_numbers and y in valid_numbers:
+            while x in self.valid_numbers and y in self.valid_numbers:
                 location = (x, y)
                 if location in self.board.pieces:
                     if self.board.pieces[location].type == piece:
                         possible_origins.append([x, y])
+                    else:
+                        break
                 x += dir[0]
                 y += dir[1]
 
-        return possible_origins
+        return self.get_single_origin(possible_origins, parsed_data)
 
     def get_single_origin(self, possible_origins, parsed_data):
         '''
@@ -229,9 +236,7 @@ class Chess:
         What I need to do here is check that the move is consistent
         with all of the data in parsed_move. I also need to check
         that players move their own pieces and capture only enemy
-        pieces. There also needs to be collision detection for the
-        Queen, Rook, Bishop and Pawn. Finally, I imagine I'll need
-        castle-checking in here.
+        pieces. Finally, I imagine I'll need castle-checking in here.
         '''               
         if self.turn%2: #White's turn
             friendly = 'White'
@@ -241,9 +246,14 @@ class Chess:
             enemy = 'White'
         moves = []
         parsed_origins = []
+        castle_move = []
         
-        if tuple(parsed_data['target']) in self.board.pieces:
-            target_square = self.board.pieces[tuple(parsed_data['target'])].color
+        if 'target' in parsed_data:
+            target = tuple(parsed_data['target'])
+            if target in self.board.pieces:
+                target_square = self.board.pieces[target].color
+            else:
+                target_square = ' '
         else:
             target_square = ' '
         
@@ -256,15 +266,32 @@ class Chess:
                 continue
             if target_square == friendly:
                 continue
-            if self.board.pieces[tuple(origin)] == enemy:
+            if self.board.pieces[tuple(origin)].color == enemy:
                 continue
             parsed_origins.append(origin)
+
+        if 'castle' in parsed_data:
+            if parsed_data['castle'] == 'QS':
+                target = [4]
+                origin = [1]
+            elif parsed_data['castle'] == 'KS':
+                target = [6]
+                origin = [8]
+            if self.turn%2:
+                target.append(1)
+                origin.append(1)
+            else:
+                target.append(8)
+                origin.append(8)
+            if tuple(target) not in self.board.pieces:
+                castle_move = [origin, target]
         
-        print(parsed_origins)
         if len(parsed_origins) == 1:
             origin = parsed_origins[0]
             target = parsed_data['target']
-            moves = [[origin, target]]
+            if len(castle_move): #Castling has been attempted
+                moves.append(castle_move)
+            moves.append([origin, target])
         else:
             print("There are", len(parsed_origins), "possible moves")
         return moves

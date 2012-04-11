@@ -1,12 +1,11 @@
 En Passant
 Pawn promotion
 Check that castling can only be done once
-The rook needs to be moved along with the king when castling.
-Collision Checking.
-  Right now if one pawn is in front of another pawn on 
+Collision Checking:
+ Right now if one pawn is in front of another pawn on 
  the home row, the pawn in back prevents the other from
  moving.
-  Also, if a bishop, rook, or queen won't check if any
- pieces are in between the origin and the target. This
- can hang up another piece's legitimate move similar to
- the pawn, or let the bishop, rook, or queen move wrongly.
+
+Maybe some day:
+ Add in some function that prevents you from making a move if it would
+ place you in check. This isn't too important as far as gameplay goes.

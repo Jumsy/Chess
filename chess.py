@@ -225,13 +225,14 @@ class Chess:
         There should only be more than one piece to move when castling.
         If the number of valid moves is not equal to one, then it gets
         printed so the player knows why the move failed.
+
+        What I need to do here is check that the move is consistent
+        with all of the data in parsed_move. I also need to check
+        that players move their own pieces and capture only enemy
+        pieces. There also needs to be collision detection for the
+        Queen, Rook, Bishop and Pawn. Finally, I imagine I'll need
+        castle-checking in here.
         '''               
-        #What I need to do here is check that the move is consistent
-        #with all of the data in parsed_move. I also need to check
-        #that players move their own pieces and capture only enemy
-        #pieces. There also needs to be collision detection for the
-        #Queen, Rook, Bishop and Pawn. Finally, I imagine I'll need
-        #castle-checking in here.
         if self.turn%2: #White's turn
             friendly = 'White'
             enemy = 'Black'
@@ -239,13 +240,33 @@ class Chess:
             friendly = 'Black'
             enemy = 'White'
         moves = []
-        print(possible_origins)
-        if len(possible_origins) == 1:
-            origin = possible_origins[0]
+        parsed_origins = []
+        
+        if tuple(parsed_data['target']) in self.board.pieces:
+            target_square = self.board.pieces[tuple(parsed_data['target'])].color
+        else:
+            target_square = ' '
+        
+        for origin in possible_origins:
+            if 'ori_col' in parsed_data and parsed_data['ori_col'] != origin[0]:
+                continue
+            if 'ori_row' in parsed_data and parsed_data['ori_row'] != origin[1]:
+                continue
+            if 'capture' not in parsed_data and target_square != ' ':
+                continue
+            if target_square == friendly:
+                continue
+            if self.board.pieces[tuple(origin)] == enemy:
+                continue
+            parsed_origins.append(origin)
+        
+        print(parsed_origins)
+        if len(parsed_origins) == 1:
+            origin = parsed_origins[0]
             target = parsed_data['target']
             moves = [[origin, target]]
         else:
-            print("There are", len(possible_origins), "possible moves")
+            print("There are", len(parsed_origins), "possible moves")
         return moves
 
 

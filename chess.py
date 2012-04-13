@@ -1,4 +1,5 @@
 #A program for playing chess by James
+#April 12th, 2012
 
 class Piece:
     def __init__(self, type, color):

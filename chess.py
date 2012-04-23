@@ -1,5 +1,5 @@
 #A program for playing chess by James
-#April 12th, 2012
+#April 23rd, 2012
 
 class Piece:
     def __init__(self, type, color):
@@ -165,12 +165,19 @@ class Chess:
         if piece == 'P':
             if self.turn%2: #White's turn
                 pawn_direction = -1
+                dblJump = 4
+                jumpSQ = (target[0], target[1] + pawn_direction)
             else: #Black's turn
                 pawn_direction = 1
+                dblJump = 5
+                jumpSQ = (target[0], target[1] + pawn_direction)
             if 'capture' in parsed_data:
                 move_offset = [[-1, pawn_direction], [1, pawn_direction]]
             elif 'ori_col' in parsed_data:
-                move_offset = [[0, pawn_direction * 2], [0, pawn_direction]]
+                move_offset = [[0, pawn_direction]]
+                if target[1] == dblJump and jumpSQ not in self.board.pieces:
+                    move_offset.append([0, pawn_direction * 2])
+                    
 
         elif piece == 'K':
             if 'castle' in parsed_data:

@@ -5,3 +5,5 @@ Dependancies:
 
 To run:
    Type 'python chess.py' on the command line.
+
+The game takes moves in algebraic notation such as 'e4', 'Nf6', 'exd5'

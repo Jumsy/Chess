@@ -9,6 +9,7 @@ class Piece:
 
 class Board:
     def __init__(self):
+        #Sets up the empty board
         light_square = ' '
         dark_square = '='
         self.board = {}
@@ -21,6 +22,7 @@ class Board:
         self.setup_pieces()
 
     def setup_pieces(self):
+        #Places pieces in the starting position
         self.pieces = {}
         home_row = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
         for i, piece in enumerate(home_row):
@@ -31,6 +33,7 @@ class Board:
             self.pieces[(x, 8)] = Piece(piece, 'Black')
 
     def display(self, side):
+        #Prints the board rotated appropriately for the player's perspective
         if side%2: #White's turn
             range_x = list(range(1, 9))
             range_y = list(reversed(range(1, 9)))
@@ -54,6 +57,7 @@ class Board:
         print(' ' + '-' * 10 + '\n')
 
     def move_piece(self, origin, target):
+        #Moves a piece from the origin to the target
         origin, target = tuple(origin), tuple(target)
         self.pieces[target] = self.pieces[origin]
         del self.pieces[origin]
@@ -65,6 +69,8 @@ class Chess:
         self.board = Board()
         self.notation = {'a':1, 'b':2, 'c':3, 'd':4, 'e':5, 'f':6, 'g':7, 'h':8}
         self.valid_numbers = [ x for x in range(1, 9) ]
+        self.en_passant = None
+        self.jumpSQ = None
 
     def print_board(self):
         self.board.display(self.turn)
@@ -152,6 +158,9 @@ class Chess:
         After move_offset or move_dirs has been set, all relative
         locations are converted to absolute locations on the board
         and the values are then passed along to get_single_origin()
+
+        For pawns jumping a square, the value self.jumpSQ is made
+        for possibly creating self.en_passant in get_single_origin()
         '''
         possible_origins = []
         if 'target' not in parsed_data or 'piece' not in parsed_data:
@@ -177,6 +186,7 @@ class Chess:
                 move_offset = [[0, pawn_direction]]
                 if target[1] == dblJump and jumpSQ not in self.board.pieces:
                     move_offset.append([0, pawn_direction * 2])
+                    self.jumpSQ = jumpSQ
                     
 
         elif piece == 'K':
@@ -267,14 +277,27 @@ class Chess:
         
         for origin in possible_origins:
             if 'ori_col' in parsed_data and parsed_data['ori_col'] != origin[0]:
+                #If the origin column has been passed along, check that it matches
+                #the found origin column
                 continue
             if 'ori_row' in parsed_data and parsed_data['ori_row'] != origin[1]:
+                #If the origin row has been passed along, check that it matches
+                #the found origin row
                 continue
             if 'capture' not in parsed_data and target_square != ' ':
+                #If a capture isn't being attempted, the only valid target
+                #square is an empty square
                 continue
+            if 'capture' in parsed_data and target_square == ' ':
+                #If attempting a capture, the only time the target square is
+                #allowed to be empty is if it is capturing en passant
+                if parsed_data['piece'] == 'P' and target != self.en_passant:
+                    continue
             if target_square == friendly:
+                #Never capture friendly pieces
                 continue
             if self.board.pieces[tuple(origin)].color == enemy:
+                #The origin piece can't be an enemy piece
                 continue
             parsed_origins.append(origin)
 
@@ -295,6 +318,8 @@ class Chess:
                 castle_move = [origin, target]
         
         if len(parsed_origins) == 1:
+            if parsed_data['piece'] == 'P' and abs(origin[1] - target[1]) > 1:
+                self.en_passant = self.jumpSQ
             origin = parsed_origins[0]
             target = parsed_data['target']
             if len(castle_move): #Castling has been attempted

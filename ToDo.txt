@@ -1,4 +1,7 @@
 En Passant
+  En passant has mostly been added in. The value self.en_passant in
+  the class Chess needs to be taken out the next turn so that pawns 
+  can't still capture to that empty square later
 Pawn promotion
 Check that castling can only be done once
 

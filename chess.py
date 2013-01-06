@@ -70,6 +70,9 @@ class Chess:
         self.notation = {'a':1, 'b':2, 'c':3, 'd':4, 'e':5, 'f':6, 'g':7, 'h':8}
         self.valid_numbers = [ x for x in range(1, 9) ]
         self.en_passant = None
+        #The actual location of the pawn when allowing for en passant
+        self.en_passant_target = None
+        self.remove_en_passant = True
         self.jumpSQ = None
 
     def print_board(self):
@@ -265,7 +268,7 @@ class Chess:
         moves = []
         parsed_origins = []
         castle_move = []
-        
+       
         if 'target' in parsed_data:
             target = tuple(parsed_data['target'])
             if target in self.board.pieces:
@@ -320,6 +323,8 @@ class Chess:
         if len(parsed_origins) == 1:
             if parsed_data['piece'] == 'P' and abs(origin[1] - target[1]) > 1:
                 self.en_passant = self.jumpSQ
+                self.en_passant_target = target
+                self.remove_en_passant = False
             origin = parsed_origins[0]
             target = parsed_data['target']
             if len(castle_move): #Castling has been attempted
@@ -327,6 +332,12 @@ class Chess:
             moves.append([origin, target])
         else:
             print("There are", len(parsed_origins), "possible moves")
+
+        #Removes en_passant only if it wasn't updated last turn
+        print(self.remove_en_passant, self.en_passant)
+        if self.remove_en_passant: self.en_passant = None
+        else: self.remove_en_passant = True
+
         return moves
 
 
